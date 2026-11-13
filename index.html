@@ -39,11 +39,12 @@ select{font-size:18px;padding:6px;border-radius:8px;border:2px solid var(--line)
 <div class="ov" id="ov"></div>
 <script>
 const $=id=>document.getElementById(id),cv=$("cv"),cx=cv.getContext("2d");
-const W=15,H=17,TY=9,DIRS=[[1,0],[-1,0],[0,1],[0,-1]],PS=[7,15],SP=[[7,7],[5,7],[9,7]],PSPD=5;
-const DIF={"Facile":{l:10,g:1,s:3.6,t:"10 vite · 1 fantasma"},"Medio":{l:5,g:2,s:4.2,t:"5 vite · 2 fantasmi"},"Difficile":{l:3,g:3,s:4.8,t:"3 vite · 3 fantasmi"}};
+const W=15,H=17,TY=9,VX=7,DIRS=[[1,0],[-1,0],[0,1],[0,-1]],PS=[7,15],SP=[[7,7],[5,7],[9,7]],PSPD=5;
+const TRY_POINTS=[100,50,25,0];
+const DIF={"Facile":{l:10,g:1,s:3.6,t:"10 vite · 1 fantasma"},"Medio":{l:7,g:2,s:3.6,t:"7 vite · 2 fantasmi"},"Difficile":{l:5,g:3,s:3.6,t:"5 vite · 3 fantasmi"}};
 const cfg={d:"Facile",tabs:[1,2,3,4,5,6,7,8,9,10],snd:true};
 let G=null,P=null,GH=[],E=[],blk=new Set(),mz=null,pl=null,nums=new Map(),cs=24,dpr=1,run=false,last=performance.now();
-const nx=(x,d)=>(x+d+W)%W,id=(x,y)=>y*W+x,op=(x,y)=>y>=0&&y<H&&!mz[y][x],gp=(x,y)=>op(x,y)&&!blk.has(id(x,y));
+const nx=(x,d)=>(x+d+W)%W,ny=(y,d)=>(y+d+H)%H,id=(x,y)=>y*W+x,op=(x,y)=>y>=0&&y<H&&!mz[y][x],can=(x,y,dx,dy)=>op(nx(x,dx),ny(y,dy)),gp=(x,y)=>op(x,y)&&!blk.has(id(x,y));
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
 /* audio */
 let AC=null;
@@ -60,6 +61,8 @@ function gen(){
    mz[y+dy][x+dx]=0;mz[ty][tx]=0;DIRS.forEach(([a,b])=>wl.push([tx,ty,a,b]))}
   for(let k=0,n=0;k<500&&n<9;k++){const x=1+Math.random()*(W-2)|0,y=1+Math.random()*(H-2)|0;if((x+y)%2&&mz[y][x]){mz[y][x]=0;n++}}
   mz[TY][0]=0;mz[TY][W-1]=0;
+  mz[0][VX]=0;mz[H-1][VX]=0;
+  [1,H-2].forEach(y=>{let target=-1;for(let d=1;d<W-2&&target<0;d++){if(VX-d>=1&&!mz[y][VX-d])target=VX-d;if(VX+d<=W-2&&!mz[y][VX+d])target=VX+d}if(target>=0)for(let x=Math.min(VX,target);x<=Math.max(VX,target);x++)mz[y][x]=0});
   const ex=new Set([PS,...SP,[1,1],[W-2,1],[1,H-2],[W-2,H-2]].map(p=>p[0]+","+p[1]));
   E=[];for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++)if(!mz[y][x]&&!ex.has(x+","+y)){let n=0;DIRS.forEach(([a,b])=>{if(op(x+a,y+b))n++});if(n===1)E.push([x,y])}
   if(E.length>=6)break;
@@ -69,15 +72,15 @@ function gen(){
  pl[PS[1]][PS[0]]=0;[[1,1],[W-2,1],[1,H-2],[W-2,H-2]].forEach(([x,y])=>{if(!mz[y][x]&&!blk.has(id(x,y)))pl[y][x]=2});
 }
 function bfs(tx,ty){const D=new Array(W*H).fill(999),q=[[tx,ty]];D[id(tx,ty)]=0;
- for(let i=0;i<q.length;i++){const[x,y]=q[i];DIRS.forEach(([a,b])=>{const X=nx(x,a),Y=y+b;if(op(X,Y)&&D[id(X,Y)]>D[id(x,y)]+1){D[id(X,Y)]=D[id(x,y)]+1;q.push([X,Y])}})}return D}
+ for(let i=0;i<q.length;i++){const[x,y]=q[i];DIRS.forEach(([a,b])=>{const X=nx(x,a),Y=ny(y,b);if(op(X,Y)&&D[id(X,Y)]>D[id(x,y)]+1){D[id(X,Y)]=D[id(x,y)]+1;q.push([X,Y])}})}return D}
 /* domande */
-const pts=s=>Math.max(10,20-Math.ceil(Math.max(0,s-10)));
 function wrongs(a,b){const v=a*b,c=[...new Set([(a+1)*b,(a-1)*b,a*(b+1),a*(b-1),v+10,v-10,v+a,v-a,v+b,v-b])].filter(x=>x>0&&x!==v&&x<=100);shuffle(c);while(c.length<3){const r=1+Math.random()*100|0;if(r!==v&&!c.includes(r))c.push(r)}return c.slice(0,3)}
 function nextQ(){
  if(G.i>=G.qs.length){end(true);return}
+ G.attempts=0;
  const[a,b]=G.qs[G.i];G.q=a*b;$("q").textContent=a+" × "+b+" = ?";
  nums.clear();const sl=shuffle(E.slice());[a*b,...wrongs(a,b)].forEach((v,k)=>nums.set(id(sl[k][0],sl[k][1]),v));
- G.qt=performance.now();hud();
+ hud();
 }
 function hud(){$("lv").textContent="❤️".repeat(Math.max(0,G.lives));$("sc").textContent="Punti "+G.score+" · "+G.i+"/"+G.qs.length}
 /* partita */
@@ -86,7 +89,7 @@ function start(){
  const D=DIF[cfg.d];gen();
  const by={};cfg.tabs.forEach(a=>{for(let b=1;b<=10;b++)(by[a*b]=by[a*b]||[]).push([a,b])});
  const qs=shuffle(Object.keys(by)).slice(0,20).map(r=>{const ps=by[r],w=ps.map(p=>p.some(x=>x===1||x===10)?.5:1);let u=Math.random()*w.reduce((s,x)=>s+x,0),k=0;while(k<ps.length-1&&(u-=w[k])>=0)k++;return ps[k]});
- G={lives:D.l,score:0,i:0,ok:0,qs,sp:D.s,fr:0,inv:0,q:0,qt:0};
+ G={lives:D.l,score:0,i:0,ok:0,qs,sp:D.s,fr:0,inv:0,q:0,attempts:0};
  P={x:PS[0],y:PS[1],dx:0,dy:0,mv:false,pr:0,want:null,ang:0};
  GH=SP.slice(0,D.g).map((s,k)=>({sx:s[0],sy:s[1],x:s[0],y:s[1],dx:0,dy:0,pr:0,w:1.8,k,fr:false}));
  sync();$("ov").classList.add("hide");ac();fit();nextQ();run=true;
@@ -104,19 +107,21 @@ function eat(){
  const i=id(P.x,P.y),p=pl[P.y][P.x];
  if(p===1){pl[P.y][P.x]=0;G.score+=1;sfx.pill()}
  else if(p===2){pl[P.y][P.x]=0;G.score+=10;G.fr=7;GH.forEach(g=>g.fr=true);sfx.gh()}
+ if(p)hud();
  if(nums.has(i)){const v=nums.get(i);nums.delete(i);
-  if(v===G.q){G.score+=pts((performance.now()-G.qt)/1000);G.ok++;G.i++;sfx.ok();nextQ()}else die()}
+  G.attempts++;
+  if(v===G.q){G.score+=TRY_POINTS[G.attempts-1];G.ok++;G.i++;sfx.ok();nextQ()}else die()}
 }
-function ps(){const w=P.want;if(w&&op(nx(P.x,w[0]),P.y+w[1])){P.dx=w[0];P.dy=w[1];P.ang=Math.atan2(w[1],w[0]);P.mv=true}else{P.mv=false;P.pr=0}}
+function ps(){const w=P.want;if(w&&can(P.x,P.y,w[0],w[1])){P.dx=w[0];P.dy=w[1];P.ang=Math.atan2(w[1],w[0]);P.mv=true}else{P.mv=false;P.pr=0}}
 function pick(g,fr){
- let o=DIRS.filter(([a,b])=>gp(nx(g.x,a),g.y+b)&&!((g.dx||g.dy)&&a===-g.dx&&b===-g.dy));
- if(!o.length)o=DIRS.filter(([a,b])=>gp(nx(g.x,a),g.y+b));
+ let o=DIRS.filter(([a,b])=>gp(nx(g.x,a),ny(g.y,b))&&!((g.dx||g.dy)&&a===-g.dx&&b===-g.dy));
+ if(!o.length)o=DIRS.filter(([a,b])=>gp(nx(g.x,a),ny(g.y,b)));
  if(!o.length){g.dx=g.dy=0;return}
  let d;
  if(fr||(g.k===2&&Math.random()<.5)||Math.random()<.1)d=o[Math.random()*o.length|0];
  else{let tx=P.x,ty=P.y;
-  if(g.k===1)for(let s=3;s>0;s--){const a=nx(P.x,P.dx*s),b=P.y+P.dy*s;if(op(a,b)){tx=a;ty=b;break}}
-  const D=bfs(tx,ty);d=o.reduce((m,c)=>D[id(nx(g.x,c[0]),g.y+c[1])]<D[id(nx(g.x,m[0]),g.y+m[1])]?c:m)}
+  if(g.k===1)for(let s=3;s>0;s--){const a=nx(P.x,P.dx*s),b=ny(P.y,P.dy*s);if(op(a,b)){tx=a;ty=b;break}}
+  const D=bfs(tx,ty);d=o.reduce((m,c)=>D[id(nx(g.x,c[0]),ny(g.y,c[1]))]<D[id(nx(g.x,m[0]),ny(g.y,m[1]))]?c:m)}
  g.dx=d[0];g.dy=d[1];
 }
 function mvg(g,dt){
@@ -124,11 +129,11 @@ function mvg(g,dt){
  const fr=g.fr&&G.fr>0;
  if(!g.dx&&!g.dy){pick(g,fr);if(!g.dx&&!g.dy)return}
  g.pr+=(fr?2.5:G.sp)*dt;
- while(g.pr>=1){g.x=nx(g.x,g.dx);g.y+=g.dy;g.pr-=1;pick(g,fr);if(!g.dx&&!g.dy){g.pr=0;break}}
+ while(g.pr>=1){g.x=nx(g.x,g.dx);g.y=ny(g.y,g.dy);g.pr-=1;pick(g,fr);if(!g.dx&&!g.dy){g.pr=0;break}}
 }
 function tick(dt){
  if(!P.mv)ps();
- if(P.mv){P.pr+=PSPD*dt;while(P.mv&&P.pr>=1){P.x=nx(P.x,P.dx);P.y+=P.dy;P.pr-=1;eat();if(!run)return;ps()}}
+ if(P.mv){P.pr+=PSPD*dt;while(P.mv&&P.pr>=1){P.x=nx(P.x,P.dx);P.y=ny(P.y,P.dy);P.pr-=1;eat();if(!run)return;ps()}}
  G.fr=Math.max(0,G.fr-dt);G.inv=Math.max(0,G.inv-dt);if(G.fr<=0)GH.forEach(g=>g.fr=false);
  GH.forEach(g=>mvg(g,dt));
  const px=P.x+(P.mv?P.dx*P.pr:0),py=P.y+(P.mv?P.dy*P.pr:0);
@@ -167,7 +172,7 @@ addEventListener("resize",fit);
 /* input: Pac-Man si muove solo mentre tieni premuto */
 const held={};
 function sync(){const v=Object.values(held),d=v.length?v[v.length-1]:null;if(!P)return;P.want=d;
- if(d&&P.mv&&d[0]===-P.dx&&d[1]===-P.dy){P.x=nx(P.x,P.dx);P.y+=P.dy;P.dx=-P.dx;P.dy=-P.dy;P.pr=1-P.pr;P.ang=Math.atan2(P.dy,P.dx)}}
+ if(d&&P.mv&&d[0]===-P.dx&&d[1]===-P.dy){P.x=nx(P.x,P.dx);P.y=ny(P.y,P.dy);P.dx=-P.dx;P.dy=-P.dy;P.pr=1-P.pr;P.ang=Math.atan2(P.dy,P.dx)}}
 function hold(k,d){const h=held[k];if(h&&h[0]===d[0]&&h[1]===d[1])return;delete held[k];held[k]=d;sync()}
 function release(k){if(k in held){delete held[k];sync()}}
 const keys={arrowup:[0,-1],arrowdown:[0,1],arrowleft:[-1,0],arrowright:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]};
@@ -200,7 +205,7 @@ function setup(){
  '<div class="mut">Difficoltà</div><div class="chips" id="dif">'+Object.keys(DIF).map(k=>'<button class="chip '+(cfg.d===k?"on":"")+'" data-d="'+k+'">'+k+'<br><small>'+DIF[k].t+'</small></button>').join("")+'</div>'+
  '<div class="mut">Tabelline</div><div class="chips" id="chips">'+[1,2,3,4,5,6,7,8,9,10].map(t=>'<button class="chip '+(cfg.tabs.includes(t)?"on":"")+'" data-t="'+t+'">'+t+'</button>').join("")+'</div>'+
  '<div class="row">Suoni<select id="snd"><option value="1" '+(cfg.snd?"selected":"")+'>Sì</option><option value="0" '+(cfg.snd?"":"selected")+'>No</option></select></div>'+
- '<button class="go" id="go">Gioca!</button><p class="mut">Frecce o WASD, joypad o croce a schermo: tieni premuto per muoverti. Mangia il numero giusto nei cunicoli: 20 domande, 20 punti se rispondi entro 10 secondi (poi calano fino a 10).</p></div>';
+ '<button class="go" id="go">Gioca!</button><p class="mut">Frecce o WASD, joypad o croce a schermo: tieni premuto per muoverti. Mangia il numero giusto nei cunicoli: 20 domande, 100 punti al 1° tentativo, 50 al 2°, 25 al 3° e 0 al 4°.</p></div>';
  $("dif").onclick=e=>{const b=e.target.closest(".chip");if(!b)return;cfg.d=b.dataset.d;[...$("dif").children].forEach(c=>c.classList.toggle("on",c===b))};
  $("chips").onclick=e=>{const b=e.target.closest(".chip");if(b)b.classList.toggle("on")};
  $("go").onclick=()=>{const t=[...document.querySelectorAll("#chips .chip.on")].map(b=>+b.dataset.t);if(!t.length){alert("Scegli almeno una tabellina!");return}cfg.tabs=t;cfg.snd=$("snd").value==="1";start()};

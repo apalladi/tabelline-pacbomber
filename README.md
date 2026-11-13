@@ -12,6 +12,7 @@ Il gioco è sviluppato in **HTML5, CSS3 e JavaScript (Vanilla)** in un unico fil
 2. **Trova la risposta corretta:** In alto sullo schermo viene mostrata un'operazione (es. $6 \times 4 = ?$). Nel labirinto compariranno dei pallini dorati contenenti diversi numeri nei cunicoli ciechi: uno è la risposta corretta, gli altri sono distrattori.
 3. **Muovi Pac-Man:** Guida Pac-Man verso il numero corretto evitando i fantasmi. 
 4. **Super-pillole:** Mangia le pillole più grandi per indebolire temporaneamente i fantasmi ed eventualmente divorarli per guadagnare punti extra.
+5. **Cunicoli:** Il labirinto permette di attraversare lo schermo sia da destra a sinistra sia dall'alto verso il basso.
 
 ---
 
@@ -43,18 +44,21 @@ In questo modo, operazioni come $3 \times 3$ hanno maggiore probabilità di appa
 
 ## 🏆 Sistema di Punteggio
 
-Il punteggio del giocatore viene calcolato combinando la precisione sulle tabelline, la velocità di risposta e la raccolta degli elementi nel labirinto:
+Il punteggio del giocatore premia le risposte corrette al primo tentativo e la raccolta degli elementi nel labirinto:
 
 | Azione | Punteggio | Note |
 | :--- | :--- | :--- |
-| **Pallino normale** | $+1$ punto | Pillole standard sparse per il labirinto |
+| **Pallino normale** | $+1$ punto ciascuno | Ogni pallino standard mangiato aggiunge un punto al punteggio |
 | **Super-pillola** | $+10$ punti | Attiva la modalità spavento per i fantasmi ($7$ secondi) |
 | **Cattura Fantasma** | $+50$ punti | Mangiando un fantasma quando è vulnerabile |
-| **Risposta Corretta** | $+10$ a $+20$ punti | **Formula tempo:** $\max(10, 20 - \lceil\max(0, \text{tempo} - 10)\rceil)$ |
+| **Risposta Corretta** | da $0$ a $100$ punti | Il punteggio dipende dal tentativo |
 
-### Dettaglio punteggio tempo
-* Rispondere entro **$10$ secondi** garantisce il punteggio massimo di **$20$ punti**.
-* Oltre i $10$ secondi, il punteggio degrada di **$1$ punto al secondo** fino ad un minimo garantito di **$10$ punti** per ogni risposta esatta.
+### Dettaglio punteggio per tentativo
+* Risposta corretta al **1° tentativo**: $100$ punti.
+* Risposta corretta al **2° tentativo**: $50$ punti.
+* Risposta corretta al **3° tentativo**: $25$ punti.
+* Risposta corretta al **4° e ultimo tentativo**: $0$ punti.
+* Ogni risposta sbagliata consuma una vita; la domanda resta attiva e si può riprovare con le risposte rimaste.
 
 ---
 
@@ -63,8 +67,8 @@ Il punteggio del giocatore viene calcolato combinando la precisione sulle tabell
 | Livello | Vite | Fantasmi | Velocità Fantasmi |
 | :--- | :---: | :---: | :--- |
 | **Facile** | $10$ | $1$ | Bassa ($3.6$) |
-| **Medio** | $5$ | $2$ | Media ($4.2$) |
-| **Difficile** | $3$ | $3$ | Alta ($4.8$) |
+| **Medio** | $7$ | $2$ | Bassa ($3.6$) |
+| **Difficile** | $5$ | $3$ | Bassa ($3.6$) |
 
 ---
 
