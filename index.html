@@ -40,8 +40,8 @@ select{font-size:18px;padding:6px;border-radius:8px;border:2px solid var(--line)
 <script>
 const $=id=>document.getElementById(id),cv=$("cv"),cx=cv.getContext("2d");
 const W=15,H=17,TY=9,VX=7,DIRS=[[1,0],[-1,0],[0,1],[0,-1]],PS=[7,15],SP=[[7,7],[5,7],[9,7]],PSPD=5;
-const TRY_POINTS=[100,50,25,0];
-const DIF={"Facile":{l:10,g:1,s:3.6,t:"10 vite · 1 fantasma"},"Medio":{l:7,g:2,s:3.6,t:"7 vite · 2 fantasmi"},"Difficile":{l:5,g:3,s:3.6,t:"5 vite · 3 fantasmi"}};
+const ANSWER_POINTS=100,WRONG_PENALTY=25,WRONG_SHAKE=.24;
+const DIF={"Facile":{l:10,g:1,s:3.6,t:"10 vite · 1 fantasma"},"Medio":{l:7,g:1,s:3.6,t:"7 vite · 1 fantasma"},"Difficile":{l:5,g:2,s:3.6,t:"5 vite · 2 fantasmi"}};
 const cfg={d:"Facile",tabs:[1,2,3,4,5,6,7,8,9,10],snd:true};
 let G=null,P=null,GH=[],E=[],blk=new Set(),mz=null,pl=null,nums=new Map(),cs=24,dpr=1,run=false,last=performance.now();
 const nx=(x,d)=>(x+d+W)%W,ny=(y,d)=>(y+d+H)%H,id=(x,y)=>y*W+x,op=(x,y)=>y>=0&&y<H&&!mz[y][x],can=(x,y,dx,dy)=>op(nx(x,dx),ny(y,dy)),gp=(x,y)=>op(x,y)&&!blk.has(id(x,y));
@@ -50,7 +50,7 @@ const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a
 let AC=null;
 function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==="suspended")AC.resume();return AC}
 function tone(f,d,t,v,at,f2){const a=ac();if(!a||!cfg.snd)return;const o=a.createOscillator(),g=a.createGain(),t0=a.currentTime+(at||0);o.type=t||"square";o.frequency.setValueAtTime(f,t0);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t0+d);g.gain.setValueAtTime(v||.06,t0);g.gain.exponentialRampToValueAtTime(.001,t0+d);o.connect(g);g.connect(a.destination);o.start(t0);o.stop(t0+d+.02)}
-const sfx={pill(){tone(520,.04,"triangle",.04)},ok(){[523,659,784,1047].forEach((f,i)=>tone(f,.12,"square",.06,i*.07))},bad(){tone(200,.4,"sawtooth",.08,0,60)},gh(){tone(300,.2,"square",.07,0,900)},win(){[523,659,784,659,784,1047].forEach((f,i)=>tone(f,.16,"square",.06,i*.11))},lose(){[400,350,300,220].forEach((f,i)=>tone(f,.25,"sawtooth",.06,i*.2))}};
+const sfx={pill(){tone(520,.04,"triangle",.04)},ok(){[523,659,784,1047].forEach((f,i)=>tone(f,.12,"square",.06,i*.07))},wrong(){tone(280,.12,"square",.07,0,140)},bad(){tone(200,.4,"sawtooth",.08,0,60)},gh(){tone(300,.2,"square",.07,0,900)},win(){[523,659,784,659,784,1047].forEach((f,i)=>tone(f,.16,"square",.06,i*.11))},lose(){[400,350,300,220].forEach((f,i)=>tone(f,.25,"sawtooth",.06,i*.2))}};
 /* labirinto (Prim casuale + anelli + cunicoli ciechi per i numeri) */
 function gen(){
  for(let t=0;t<300;t++){
@@ -89,13 +89,13 @@ function start(){
  const D=DIF[cfg.d];gen();
  const by={};cfg.tabs.forEach(a=>{for(let b=1;b<=10;b++)(by[a*b]=by[a*b]||[]).push([a,b])});
  const qs=shuffle(Object.keys(by)).slice(0,20).map(r=>{const ps=by[r],w=ps.map(p=>p.some(x=>x===1||x===10)?.5:1);let u=Math.random()*w.reduce((s,x)=>s+x,0),k=0;while(k<ps.length-1&&(u-=w[k])>=0)k++;return ps[k]});
- G={lives:D.l,score:0,i:0,ok:0,qs,sp:D.s,fr:0,inv:0,q:0,attempts:0};
+ G={lives:D.l,score:0,i:0,ok:0,qs,sp:D.s,fr:0,inv:0,q:0,attempts:0,shake:0};
  P={x:PS[0],y:PS[1],dx:0,dy:0,mv:false,pr:0,want:null,ang:0};
  GH=SP.slice(0,D.g).map((s,k)=>({sx:s[0],sy:s[1],x:s[0],y:s[1],dx:0,dy:0,pr:0,w:1.8,k,fr:false}));
  sync();$("ov").classList.add("hide");ac();fit();nextQ();run=true;
 }
-function die(){
- G.lives--;sfx.bad();hud();if(G.lives<=0){end(false);return}resetPos();
+function die(sound=true){
+ G.lives--;if(sound)sfx.bad();hud();if(G.lives<=0){end(false);return}resetPos();
 }
 function end(win){
  if(!run)return;run=false;win?sfx.win():sfx.lose();
@@ -110,7 +110,8 @@ function eat(){
  if(p)hud();
  if(nums.has(i)){const v=nums.get(i);nums.delete(i);
   G.attempts++;
-  if(v===G.q){G.score+=TRY_POINTS[G.attempts-1];G.ok++;G.i++;sfx.ok();nextQ()}else die()}
+  if(v===G.q){G.score+=ANSWER_POINTS;G.ok++;G.i++;sfx.ok();nextQ()}
+  else{G.score-=WRONG_PENALTY;G.shake=WRONG_SHAKE;sfx.wrong();if(G.attempts===3)die(false);else hud()}}
 }
 function ps(){const w=P.want;if(w&&can(P.x,P.y,w[0],w[1])){P.dx=w[0];P.dy=w[1];P.ang=Math.atan2(w[1],w[0]);P.mv=true}else{P.mv=false;P.pr=0}}
 function pick(g,fr){
@@ -134,7 +135,7 @@ function mvg(g,dt){
 function tick(dt){
  if(!P.mv)ps();
  if(P.mv){P.pr+=PSPD*dt;while(P.mv&&P.pr>=1){P.x=nx(P.x,P.dx);P.y=ny(P.y,P.dy);P.pr-=1;eat();if(!run)return;ps()}}
- G.fr=Math.max(0,G.fr-dt);G.inv=Math.max(0,G.inv-dt);if(G.fr<=0)GH.forEach(g=>g.fr=false);
+ G.fr=Math.max(0,G.fr-dt);G.inv=Math.max(0,G.inv-dt);G.shake=Math.max(0,G.shake-dt);if(G.fr<=0)GH.forEach(g=>g.fr=false);
  GH.forEach(g=>mvg(g,dt));
  const px=P.x+(P.mv?P.dx*P.pr:0),py=P.y+(P.mv?P.dy*P.pr:0);
  for(const g of GH){if(g.w>0||!run)continue;
@@ -159,7 +160,7 @@ function draw(t){
  nums.forEach((v,i)=>{const x=(i%W+.5)*s,y=((i/W|0)+.5)*s;cx.fillStyle="#ffd23f";cx.beginPath();cx.arc(x,y,s*.46,0,7);cx.fill();
   cx.fillStyle="#1b1b3a";cx.font="bold "+Math.round(s*(v>99?.34:.44))+"px 'Trebuchet MS',sans-serif";cx.textAlign="center";cx.textBaseline="middle";cx.fillText(v,x,y+s*.03)});
  if(!G)return;
- const px=(P.x+(P.mv?P.dx*P.pr:0)+.5)*s,py=(P.y+(P.mv?P.dy*P.pr:0)+.5)*s,m=P.mv?.05+.35*Math.abs(Math.sin(t*14)):.12;
+ const sh=G.shake>0?WRONG_SHAKE-G.shake:0,px=(P.x+(P.mv?P.dx*P.pr:0)+.5)*s+Math.sin(sh*80)*s*.12,py=(P.y+(P.mv?P.dy*P.pr:0)+.5)*s+Math.cos(sh*80)*s*.06,m=P.mv?.05+.35*Math.abs(Math.sin(t*14)):.12;
  if(G.inv<=0||Math.floor(t*10)%2){cx.fillStyle="#ffd23f";cx.beginPath();cx.moveTo(px,py);cx.arc(px,py,s*.42,P.ang+m,P.ang+Math.PI*2-m);cx.closePath();cx.fill()}
  GH.forEach(g=>ghost((g.x+g.dx*g.pr+.5)*s,(g.y+g.dy*g.pr+.5)*s,["#ff3b3b","#ff8fd0","#3be0ff"][g.k],g.fr&&G.fr>0,t,g));
 }
@@ -205,7 +206,7 @@ function setup(){
  '<div class="mut">Difficoltà</div><div class="chips" id="dif">'+Object.keys(DIF).map(k=>'<button class="chip '+(cfg.d===k?"on":"")+'" data-d="'+k+'">'+k+'<br><small>'+DIF[k].t+'</small></button>').join("")+'</div>'+
  '<div class="mut">Tabelline</div><div class="chips" id="chips">'+[1,2,3,4,5,6,7,8,9,10].map(t=>'<button class="chip '+(cfg.tabs.includes(t)?"on":"")+'" data-t="'+t+'">'+t+'</button>').join("")+'</div>'+
  '<div class="row">Suoni<select id="snd"><option value="1" '+(cfg.snd?"selected":"")+'>Sì</option><option value="0" '+(cfg.snd?"":"selected")+'>No</option></select></div>'+
- '<button class="go" id="go">Gioca!</button><p class="mut">Frecce o WASD, joypad o croce a schermo: tieni premuto per muoverti. Mangia il numero giusto nei cunicoli: 20 domande, 100 punti al 1° tentativo, 50 al 2°, 25 al 3° e 0 al 4°.</p></div>';
+ '<button class="go" id="go">Gioca!</button><p class="mut">Frecce o WASD, joypad o croce a schermo: tieni premuto per muoverti. Risposta corretta: +100 punti. Risposta sbagliata: -25 punti, un suono e un piccolo tremolio. Se sbagli anche il 3° tentativo, perdi una vita.</p></div>';
  $("dif").onclick=e=>{const b=e.target.closest(".chip");if(!b)return;cfg.d=b.dataset.d;[...$("dif").children].forEach(c=>c.classList.toggle("on",c===b))};
  $("chips").onclick=e=>{const b=e.target.closest(".chip");if(b)b.classList.toggle("on")};
  $("go").onclick=()=>{const t=[...document.querySelectorAll("#chips .chip.on")].map(b=>+b.dataset.t);if(!t.length){alert("Scegli almeno una tabellina!");return}cfg.tabs=t;cfg.snd=$("snd").value==="1";start()};

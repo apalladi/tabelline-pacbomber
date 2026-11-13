@@ -44,21 +44,17 @@ In questo modo, operazioni come $3 \times 3$ hanno maggiore probabilità di appa
 
 ## 🏆 Sistema di Punteggio
 
-Il punteggio del giocatore premia le risposte corrette al primo tentativo e la raccolta degli elementi nel labirinto:
+Il punteggio premia le risposte corrette e la raccolta degli elementi nel labirinto, penalizzando le risposte sbagliate:
 
 | Azione | Punteggio | Note |
 | :--- | :--- | :--- |
 | **Pallino normale** | $+1$ punto ciascuno | Ogni pallino standard mangiato aggiunge un punto al punteggio |
 | **Super-pillola** | $+10$ punti | Attiva la modalità spavento per i fantasmi ($7$ secondi) |
 | **Cattura Fantasma** | $+50$ punti | Mangiando un fantasma quando è vulnerabile |
-| **Risposta Corretta** | da $0$ a $100$ punti | Il punteggio dipende dal tentativo |
+| **Risposta Corretta** | $+100$ punti | Vale lo stesso a ogni tentativo |
+| **Risposta Sbagliata** | $-25$ punti | La pillola sbagliata produce un suono e un breve tremolio |
 
-### Dettaglio punteggio per tentativo
-* Risposta corretta al **1° tentativo**: $100$ punti.
-* Risposta corretta al **2° tentativo**: $50$ punti.
-* Risposta corretta al **3° tentativo**: $25$ punti.
-* Risposta corretta al **4° e ultimo tentativo**: $0$ punti.
-* Ogni risposta sbagliata consuma una vita; la domanda resta attiva e si può riprovare con le risposte rimaste.
+Una vita si perde solo se è sbagliato anche il **3° tentativo**; gli errori precedenti non aggiungono fantasmi. La domanda resta attiva con le risposte rimaste.
 
 ---
 
@@ -67,8 +63,8 @@ Il punteggio del giocatore premia le risposte corrette al primo tentativo e la r
 | Livello | Vite | Fantasmi | Velocità Fantasmi |
 | :--- | :---: | :---: | :--- |
 | **Facile** | $10$ | $1$ | Bassa ($3.6$) |
-| **Medio** | $7$ | $2$ | Bassa ($3.6$) |
-| **Difficile** | $5$ | $3$ | Bassa ($3.6$) |
+| **Medio** | $7$ | $1$ | Bassa ($3.6$) |
+| **Difficile** | $5$ | $2$ | Bassa ($3.6$) |
 
 ---
 
